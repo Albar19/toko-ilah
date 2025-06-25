@@ -18,8 +18,8 @@ public function run()
 {
     DB::table('users')->insert([
         'name' => 'Admin',
-        'email' => 'admin@toko-ilah.com',
-        'password' => Hash::make('admin123'),
+        'email' => 'admin@toko.com', // Username
+        'password' => Hash::make('admin123'), // Password
     ]);
 }
 }

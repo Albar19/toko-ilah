@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Product;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
@@ -8,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\ValidationException;
 
 class PenjualanController extends Controller
 {
@@ -19,30 +21,79 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validasi input dasar
         $request->validate([
             'tanggal' => 'required|date',
             'produk_id.*' => 'required|exists:products,id',
             'qty.*' => 'required|integer|min:1',
-            'harga.*' => 'required|integer|min:0',
-            'subtotal.*' => 'required|integer|min:0',
         ]);
 
-        $penjualan = Penjualan::create([
-            'tanggal' => $request->tanggal,
-            'total_harga' => array_sum($request->subtotal),
-        ]);
+        // 2. Agregasi produk untuk menggabungkan item yang sama
+        $produkData = [];
+        $totalHarga = 0;
 
         foreach ($request->produk_id as $i => $id_produk) {
-            PenjualanDetail::create([
-                'penjualan_id' => $penjualan->id,
-                'product_id' => $id_produk,
-                'qty' => $request->qty[$i],
-                'harga_satuan' => $request->harga[$i],
-                'subtotal' => $request->subtotal[$i],
-            ]);
+            $qty = (int)$request->qty[$i];
+            
+            if (isset($produkData[$id_produk])) {
+                $produkData[$id_produk]['qty'] += $qty;
+            } else {
+                $product = Product::find($id_produk);
+                $produkData[$id_produk] = [
+                    'qty' => $qty,
+                    'harga' => $product->harga,
+                    'nama' => $product->nama_produk,
+                    'stok_saat_ini' => $product->stok,
+                ];
+            }
+        }
+        
+        // 3. Validasi stok sebelum memulai transaksi
+        foreach ($produkData as $id => $data) {
+             if ($data['qty'] > $data['stok_saat_ini']) {
+                throw ValidationException::withMessages([
+                    'produk_id' => 'Stok untuk produk "' . $data['nama'] . '" tidak mencukupi. Sisa stok: ' . $data['stok_saat_ini']
+                ]);
+            }
+            // Hitung subtotal dan total harga
+            $subtotal = $data['qty'] * $data['harga'];
+            $produkData[$id]['subtotal'] = $subtotal;
+            $totalHarga += $subtotal;
         }
 
-        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil disimpan.');
+        // 4. Gunakan DB Transaction untuk memastikan integritas data
+        try {
+            DB::beginTransaction();
+
+            // 5. Buat entri penjualan utama
+            $penjualan = Penjualan::create([
+                'tanggal' => $request->tanggal,
+                'total_harga' => $totalHarga,
+            ]);
+
+            // 6. Simpan detail penjualan dan kurangi stok
+            foreach ($produkData as $id_produk => $data) {
+                PenjualanDetail::create([
+                    'penjualan_id' => $penjualan->id,
+                    'product_id' => $id_produk,
+                    'qty' => $data['qty'],
+                    'harga_satuan' => $data['harga'],
+                    'subtotal' => $data['subtotal'],
+                ]);
+
+                // 7. Kurangi stok produk
+                $product = Product::find($id_produk);
+                $product->decrement('stok', $data['qty']);
+            }
+
+            DB::commit(); // Jika semua berhasil, simpan perubahan
+
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil disimpan.');
+
+        } catch (\Exception $e) {
+            DB::rollBack(); // Jika ada error, batalkan semua perubahan
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyimpan penjualan: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function index()
@@ -148,5 +199,122 @@ class PenjualanController extends Controller
         ]);
 
         return $pdf->download('rekap-bulanan-'.$bulan.'.pdf');
+    }
+
+    /**
+     * Menampilkan form untuk mengedit penjualan.
+     */
+    public function edit(Penjualan $penjualan)
+    {
+        // Load relasi details beserta product, dan ambil semua produk untuk dropdown
+        $penjualan->load('details.product');
+        $products = Product::all();
+
+        return view('penjualan.edit', compact('penjualan', 'products'));
+    }
+
+    /**
+     * Memperbarui data penjualan di database.
+     */
+    public function update(Request $request, Penjualan $penjualan)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'produk_id.*' => 'required|exists:products,id',
+            'qty.*' => 'required|integer|min:1',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Kembalikan stok dari penjualan lama
+            foreach ($penjualan->details as $detail) {
+                Product::find($detail->product_id)->increment('stok', $detail->qty);
+            }
+            
+            // 2. Hapus detail penjualan yang lama
+            $penjualan->details()->delete();
+
+            // 3. Proses data baru (mirip seperti method store)
+            $produkData = [];
+            $totalHarga = 0;
+            foreach ($request->produk_id as $i => $id_produk) {
+                 $product = Product::find($id_produk);
+                 $qty = (int)$request->qty[$i];
+
+                 // Cek stok
+                 if ($qty > $product->stok) {
+                    throw new \Exception('Stok untuk produk "'.$product->nama_produk.'" tidak mencukupi.');
+                 }
+                 
+                 $subtotal = $qty * $product->harga;
+                 $totalHarga += $subtotal;
+
+                 // Gabungkan produk yang sama
+                 if (isset($produkData[$id_produk])) {
+                     $produkData[$id_produk]['qty'] += $qty;
+                     $produkData[$id_produk]['subtotal'] += $subtotal;
+                 } else {
+                     $produkData[$id_produk] = [
+                        'qty' => $qty,
+                        'harga_satuan' => $product->harga,
+                        'subtotal' => $subtotal,
+                     ];
+                 }
+            }
+
+            // 4. Update data penjualan utama
+            $penjualan->update([
+                'tanggal' => $request->tanggal,
+                'total_harga' => $totalHarga,
+            ]);
+
+            // 5. Buat detail penjualan baru dan kurangi stok
+            foreach($produkData as $id_produk => $data) {
+                $penjualan->details()->create([
+                    'product_id' => $id_produk,
+                    'qty' => $data['qty'],
+                    'harga_satuan' => $data['harga_satuan'],
+                    'subtotal' => $data['subtotal'],
+                ]);
+
+                // Kurangi stok produk
+                Product::find($id_produk)->decrement('stok', $data['qty']);
+            }
+
+            DB::commit();
+
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil diupdate.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal mengupdate penjualan: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Menghapus data penjualan.
+     */
+    public function destroy(Penjualan $penjualan)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Kembalikan stok produk dari detail penjualan yang akan dihapus
+            foreach ($penjualan->details as $detail) {
+                Product::find($detail->product_id)->increment('stok', $detail->qty);
+            }
+
+            // Hapus data penjualan (detail akan terhapus otomatis karena cascade)
+            $penjualan->delete();
+
+            DB::commit();
+
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dihapus dan stok telah dikembalikan.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('penjualan.index')->with('error', 'Gagal menghapus penjualan.');
+        }
     }
 }

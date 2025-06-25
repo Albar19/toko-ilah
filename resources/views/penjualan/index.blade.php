@@ -12,6 +12,14 @@
             </a>
         </div>
 
+        {{-- Notifikasi Sukses/Error --}}
+        @if(session('success'))
+            <div class="mb-4 p-4 bg-green-100 text-green-700 rounded">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded">{{ session('error') }}</div>
+        @endif
+
         {{-- Tabel Penjualan --}}
         <table class="w-full border">
             <thead class="bg-gray-100">
@@ -26,8 +34,21 @@
                 <tr>
                     <td class="border p-2">{{ $jual->tanggal }}</td>
                     <td class="border p-2">Rp {{ number_format($jual->total_harga, 0, ',', '.') }}</td>
-                    <td class="border p-2">
-                        <a href="{{ route('penjualan.show', $jual->id) }}" class="text-blue-500 hover:underline">Detail</a>
+                    <td class="border p-2 text-center">
+                        {{-- Tombol Detail --}}
+                        <a href="{{ route('penjualan.show', $jual->id) }}" class="text-blue-500 hover:underline">Detail</a> |
+
+                        {{-- Tombol Edit (Perbaikan di sini) --}}
+                        <a href="{{ route('penjualan.edit', $jual->id) }}" class="text-yellow-600 hover:underline">Edit</a> |
+
+                        {{-- Form untuk Tombol Hapus (Perbaikan di sini) --}}
+                        <form action="{{ route('penjualan.destroy', $jual->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data penjualan ini? Stok akan dikembalikan.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 hover:underline">
+                                Hapus
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 @empty

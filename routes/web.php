@@ -10,53 +10,54 @@ use App\Http\Controllers\DashboardController;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
+// Mengarahkan halaman utama ke halaman login
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Dashboard
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
+// Profile (hanya untuk user login)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
-
-Route::get('/register', function () {
-    abort(403);
-});
-
+// Produk (resource, hanya untuk user login)
 Route::middleware(['auth'])->group(function () {
     Route::resource('produk', ProductController::class);
 });
 
+// Penjualan (CRUD, hanya untuk user login)
 Route::middleware(['auth'])->group(function () {
+    Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
     Route::get('/penjualan/create', [PenjualanController::class, 'create'])->name('penjualan.create');
     Route::post('/penjualan/store', [PenjualanController::class, 'store'])->name('penjualan.store');
+    Route::get('/penjualan/{penjualan}', [PenjualanController::class, 'show'])->name('penjualan.show');
+    Route::get('/penjualan/{penjualan}/edit', [PenjualanController::class, 'edit'])->name('penjualan.edit');
+    Route::put('/penjualan/{penjualan}', [PenjualanController::class, 'update'])->name('penjualan.update');
+    Route::delete('/penjualan/{penjualan}', [PenjualanController::class, 'destroy'])->name('penjualan.destroy');
 });
 
-Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
-Route::get('/penjualan/{id}', [PenjualanController::class, 'show'])->name('penjualan.show');
+// Laporan & Analisis (hanya untuk user login)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/rekap', [PenjualanController::class, 'rekap'])->name('penjualan.rekap');
+    Route::get('/rekap/{bulan}', [PenjualanController::class, 'rekapDetail'])->name('penjualan.rekap.detail');
+    Route::get('/rekap/{bulan}/pdf', [PenjualanController::class, 'rekapPdf'])->name('penjualan.rekap.pdf');
+    Route::get('/analisis', [PenjualanController::class, 'analisis'])->name('penjualan.analisis');
+    Route::get('/analisis/pdf', [PenjualanController::class, 'analisisPdf'])->name('penjualan.analisis.pdf');
+});
 
-Route::get('/rekap', [PenjualanController::class, 'rekap'])->name('penjualan.rekap');
-Route::get('/rekap/{bulan}', [PenjualanController::class, 'rekapDetail'])->name('penjualan.rekap.detail');
+// Route khusus registrasi di-disable
+Route::get('/register', function () {
+    abort(403);
+});
 
-Route::get('/analisis', [PenjualanController::class, 'analisis'])->name('penjualan.analisis');
-
-Route::get('/analisis/pdf', [PenjualanController::class, 'analisisPdf'])->name('penjualan.analisis.pdf');
-
-Route::get('/rekap/{bulan}/pdf', [PenjualanController::class, 'rekapPdf'])->name('penjualan.rekap.pdf');
-
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
+// Include route otentikasi (login, logout, dll)
+require __DIR__.'/auth.php';
