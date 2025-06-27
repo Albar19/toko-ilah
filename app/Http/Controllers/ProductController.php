@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -33,10 +34,21 @@ class ProductController extends Controller
             'nama_produk' => 'required',
             'harga' => 'required|numeric',
             'stok' => 'required|numeric',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        Product::create($request->all());
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan');
+        $input = $request->all();
+
+        if ($image = $request->file('image')) {
+            $destinationPath = 'storage/products/';
+            $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
+            $image->move($destinationPath, $profileImage);
+            $input['image'] = "$profileImage";
+        }
+    
+        Product::create($input);
+     
+        return redirect()->route('produk.index')->with('success','Produk berhasil ditambahkan.');
     }
 
     /**
@@ -64,10 +76,23 @@ class ProductController extends Controller
             'nama_produk' => 'required',
             'harga' => 'required|numeric',
             'stok' => 'required|numeric',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $produk->update($request->all());
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil diupdate');
+        $input = $request->all();
+
+        if ($image = $request->file('image')) {
+            $destinationPath = 'storage/products/';
+            $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
+            $image->move($destinationPath, $profileImage);
+            $input['image'] = "$profileImage";
+        }else{
+            unset($input['image']);
+        }
+    
+        $produk->update($input);
+    
+        return redirect()->route('produk.index')->with('success','Produk berhasil diupdate.');
     }
 
     /**

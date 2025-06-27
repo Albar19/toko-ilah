@@ -15,6 +15,7 @@
                 <thead class="bg-gray-200">
                     <tr>
                         <th class="p-2 border">No</th>
+                        <th class="p-2 border">Gambar</th>
                         <th class="p-2 border">Nama Produk</th>
                         <th class="p-2 border">Harga</th>
                         <th class="p-2 border">Stok</th>
@@ -25,6 +26,13 @@
                     @foreach($produk as $index => $item)
                     <tr>
                         <td class="p-2 border">{{ $index + 1 }}</td>
+                        <td class="p-2 border">
+                            @if($item->image)
+                                <img src="{{ url('storage/products/'.$item->image) }}" style="height: 50px; width: 50px; object-fit: cover;"/>
+                            @else
+                                <span>No Image</span>
+                            @endif
+                        </td>
                         <td class="p-2 border">{{ $item->nama_produk }}</td>
                         <td class="p-2 border">Rp {{ number_format($item->harga, 0, ',', '.') }}</td>
                         <td class="p-2 border">{{ $item->stok }}</td>
@@ -40,7 +48,7 @@
                     @endforeach
                     @if($produk->isEmpty())
                     <tr>
-                        <td colspan="5" class="text-center p-4">Belum ada produk.</td>
+                        <td colspan="6" class="text-center p-4">Belum ada produk.</td>
                     </tr>
                     @endif
                 </tbody>
