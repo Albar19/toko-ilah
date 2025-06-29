@@ -25,7 +25,8 @@
                 <tbody>
                     @foreach($produk as $index => $item)
                     <tr>
-                        <td class="p-2 border">{{ $index + 1 }}</td>
+                        {{-- Penomoran sesuai paginasi --}}
+                        <td class="p-2 border">{{ $produk->firstItem() + $index }}</td>
                         <td class="p-2 border">
                             @if($item->image)
                                 <img src="{{ url('storage/products/'.$item->image) }}" style="height: 50px; width: 50px; object-fit: cover;"/>
@@ -53,6 +54,11 @@
                     @endif
                 </tbody>
             </table>
+
+            {{-- Pagination --}}
+            <div class="mt-4">
+                {{ $produk->links() }}
+            </div>
         </div>
     </div>
 </x-app-layout>
