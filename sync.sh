@@ -4,7 +4,7 @@
 
 
 
-PROJECT_ROOT_DIR="/home/rizal/es_teh"
+PROJECT_ROOT_DIR="/home/ilah/toko-ilah"
 
 WEB_USER="www-data"    
 
