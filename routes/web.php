@@ -73,3 +73,12 @@ Route::get('/register', function () {
 
 // Include route otentikasi bawaan Laravel (login, logout, forgot password, dll)
 require __DIR__.'/auth.php';
+
+Route::get('/debug-db', function () {
+    return [
+        'DATABASE_URL' => env('DATABASE_URL'),
+        'DB_CONNECTION' => env('DB_CONNECTION'),
+        'DB_HOST' => env('DB_HOST'),
+        'DB_DATABASE' => env('DB_DATABASE'),
+    ];
+});
