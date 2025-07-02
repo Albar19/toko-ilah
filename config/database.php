@@ -52,14 +52,13 @@ return [
         ],
 
         // Konfigurasi PostgreSQL - Database open source yang powerful
-        'pgsql' => [
+'pgsql' => [
     'driver' => 'pgsql',
-    'url' => env('DATABASE_URL'),
-    'host' => parse_url(env('DATABASE_URL'), PHP_URL_HOST),
-    'port' => parse_url(env('DATABASE_URL'), PHP_URL_PORT),
-    'database' => ltrim(parse_url(env('DATABASE_URL'), PHP_URL_PATH), '/'),
-    'username' => parse_url(env('DATABASE_URL'), PHP_URL_USER),
-    'password' => parse_url(env('DATABASE_URL'), PHP_URL_PASS),
+    'host' => env('DB_HOST', '127.0.0.1'),
+    'port' => env('DB_PORT', '5432'),
+    'database' => env('DB_DATABASE', 'railway'),
+    'username' => env('DB_USERNAME', 'postgres'),
+    'password' => env('DB_PASSWORD', ''),
     'charset' => 'utf8',
     'prefix' => '',
     'prefix_indexes' => true,
