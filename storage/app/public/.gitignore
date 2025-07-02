@@ -1,0 +1,38 @@
+*
+!.gitignore
+# Direktori dan file yang terkait dengan lingkungan pengembangan
+/.fleet
+/.idea
+/.vscode
+/.phpunit.cache
+.phpunit.result.cache
+
+# File environment yang berisi informasi sensitif
+.env
+.env.backup
+.env.production
+
+# Direktori dependensi yang di-install oleh package manager
+/node_modules
+/vendor
+
+# Direktori dan file hasil build dari Laravel Vite
+/public/build
+/public/hot
+
+# Direktori symbolic link untuk file yang di-upload
+/public/storage
+
+# File-file cache dan sesi dari framework Laravel
+/storage/*.key
+/bootstrap/cache/*.php
+/bootstrap/cache/*.scanned.php
+
+# File log
+npm-debug.log
+yarn-error.log
+
+# File konfigurasi dari tool development lain
+Homestead.json
+Homestead.yaml
+auth.json
