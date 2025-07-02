@@ -4,7 +4,7 @@
     </x-slot>
 
     <div class="p-4">
-        {{-- ✅ Tombol Tambah Penjualan --}}
+        {{-- Tombol Tambah Penjualan --}}
         <div class="mb-4">
             <a href="{{ route('penjualan.create') }}"
                class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
@@ -35,13 +35,8 @@
                     <td class="border p-2">{{ $jual->tanggal }}</td>
                     <td class="border p-2">Rp {{ number_format($jual->total_harga, 0, ',', '.') }}</td>
                     <td class="border p-2 text-center">
-                        {{-- Tombol Detail --}}
                         <a href="{{ route('penjualan.show', $jual->id) }}" class="text-blue-500 hover:underline">Detail</a> |
-
-                        {{-- Tombol Edit (Perbaikan di sini) --}}
                         <a href="{{ route('penjualan.edit', $jual->id) }}" class="text-yellow-600 hover:underline">Edit</a> |
-
-                        {{-- Form untuk Tombol Hapus (Perbaikan di sini) --}}
                         <form action="{{ route('penjualan.destroy', $jual->id) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data penjualan ini? Stok akan dikembalikan.')">
                             @csrf
                             @method('DELETE')

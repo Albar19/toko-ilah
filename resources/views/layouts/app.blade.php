@@ -22,10 +22,8 @@
 
         {{-- 🔸 Sidebar (Desktop & Mobile Combined Logic) --}}
         
-        <!-- Backdrop untuk Mobile -->
         <div x-show="open" @click="open = false" x-transition.opacity class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
 
-        <!-- Konten Sidebar -->
         <aside 
             class="fixed top-0 left-0 w-64 bg-white h-full z-50 shadow-lg transform -translate-x-full transition-transform md:relative md:translate-x-0 md:shadow"
             :class="{'translate-x-0': open}"
@@ -37,7 +35,8 @@
                     <a href="{{ route('produk.index') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 @if(request()->routeIs('produk.*')) bg-gray-200 @endif">📦 Produk</a>
                     <a href="{{ route('penjualan.index') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 @if(request()->routeIs('penjualan.index')) bg-gray-200 @endif">🛒 Penjualan</a>
                     <a href="{{ route('penjualan.analisis') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 @if(request()->routeIs('penjualan.analisis')) bg-gray-200 @endif">📈 Analisis</a>
-                    <a href="{{ url('/rekap') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 @if(request()->is('rekap')) bg-gray-200 @endif">🧾 Rekap</a>
+                    {{-- Perbaikan: Menggunakan route() untuk konsistensi --}}
+                    <a href="{{ route('penjualan.rekap') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-200 @if(request()->routeIs('penjualan.rekap')) bg-gray-200 @endif">🧾 Rekap</a>
                     
                     <div class="pt-4">
                         <form method="POST" action="{{ route('logout') }}" onsubmit="return confirm('Anda yakin ingin keluar?')">
@@ -51,9 +50,7 @@
             </div>
         </aside>
 
-
         {{-- 🔸 Main Content --}}
-        {{-- Perubahan utama ada di sini: class 'md:ml-64' dihapus --}}
         <main class="flex-1 p-6">
             @if (isset($header))
                 <header class="bg-white shadow mb-6">

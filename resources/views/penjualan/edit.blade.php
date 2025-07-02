@@ -24,27 +24,42 @@
                     </tr>
                 </thead>
                 <tbody id="produk-body">
-                    @foreach(old('produk_id', $penjualan->details->pluck('product_id')) as $index => $produk_id)
+                    @php
+                        // Logika untuk menangani data lama (old) jika ada, jika tidak, gunakan data dari database
+                        $details = old('produk_id') ? collect(old('produk_id'))->map(function($id, $index) use ($products) {
+                            $product = $products->find($id);
+                            $harga = $product ? $product->harga : 0;
+                            $qty = (int)old('qty.'.$index, 1);
+                            return (object)[
+                                'product_id' => $id,
+                                'qty' => $qty,
+                                'harga_satuan' => $harga,
+                                'subtotal' => $qty * $harga,
+                            ];
+                        }) : $penjualan->details;
+                    @endphp
+
+                    @foreach($details as $index => $detail)
                     <tr>
                         <td class="border p-2">
                             <select name="produk_id[]" class="product-dropdown w-full border p-2" onchange="updateHarga(this)">
                                 <option value="">-- Pilih Produk --</option>
                                 @foreach($products as $product)
                                     <option value="{{ $product->id }}" data-harga="{{ $product->harga }}" 
-                                        {{ $produk_id == $product->id ? 'selected' : '' }}>
+                                        {{ $detail->product_id == $product->id ? 'selected' : '' }}>
                                         {{ $product->nama_produk }}
                                     </option>
                                 @endforeach
                             </select>
                         </td>
                         <td class="border p-2">
-                            <input type="number" name="qty[]" value="{{ old('qty.' . $index, $penjualan->details[$index]->qty ?? 1) }}" min="1" class="qty-input w-full border p-2" oninput="updateSubtotal(this)">
+                            <input type="number" name="qty[]" value="{{ $detail->qty }}" min="1" class="qty-input w-full border p-2" oninput="updateSubtotal(this)">
                         </td>
                         <td class="border p-2">
-                            <input type="number" name="harga[]" value="{{ old('harga.' . $index, $penjualan->details[$index]->harga_satuan ?? 0) }}" readonly class="harga-input w-full border p-2">
+                            <input type="number" name="harga[]" value="{{ $detail->harga_satuan }}" readonly class="harga-input w-full border p-2 bg-gray-100">
                         </td>
                         <td class="border p-2">
-                            <input type="number" name="subtotal[]" value="{{ old('subtotal.' . $index, $penjualan->details[$index]->subtotal ?? 0) }}" readonly class="subtotal-input w-full border p-2">
+                            <input type="number" name="subtotal[]" value="{{ $detail->subtotal }}" readonly class="subtotal-input w-full border p-2 bg-gray-100">
                         </td>
                         <td class="border p-2 text-center">
                             <button type="button" onclick="hapusBaris(this)" class="text-red-500">🗑️</button>
@@ -101,14 +116,16 @@
             const newRow = tbody.rows[0].cloneNode(true);
 
             newRow.querySelectorAll('input').forEach(input => {
-                if (input.name !== 'harga[]') { // Jangan reset harga
+                if (input.name === 'qty[]') {
+                    input.value = '1';
+                } else {
                     input.value = '';
                 }
             });
-             newRow.querySelector('.qty-input').value = '1';
             newRow.querySelector('select').selectedIndex = 0;
 
             tbody.appendChild(newRow);
+            updateHarga(newRow.querySelector('select'));
         }
 
         function hapusBaris(button) {
